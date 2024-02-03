@@ -17,6 +17,7 @@ const registerUser= asynchandler( async(req,res)=>{
 
   const {username,email,fullname,password}=req.body;
   console.log(email,username);
+  console.log(password,fullname);
   //
 //   if(username==="")
 //   {
@@ -30,21 +31,29 @@ throw new ApiError(400,"All fields are compulsory");
 
 
 //user exists
-const existingUser=Users.findOne({
+const existingUser=await Users.findOne({
 
     $or:[{username},{email}]
 }
 )
 if(existingUser){
-    throw new ApiError(408,"Username or email already exists");
+    throw new ApiError(408,"Username or email alreadyyy exists");
 }
+console.log(req.files);
 const avatarlocalPath=req.files?.avatar[0]?.path
-const coverImagelocalPath=req.files?.coverImage[0]?.path
+console.log(avatarlocalPath);
+let coverImagelocalPath;
+if(req.files&&Array.isArray(req.files.coverImage)&&req.files.coverImage.length>0)
+{
+    coverImagelocalPath=req.files.coverImage[0].path;
+}
+// const coverImagelocalPath=req.files?.coverImage[0]?.path;
 if(!avatarlocalPath){
     throw new ApiError(400,"Avatar is required");
 }
 
 const avatar=await uploadOnCloudinary(avatarlocalPath);
+
 const coverImage=await uploadOnCloudinary(coverImagelocalPath);
 if(!avatar)
 {
@@ -74,6 +83,17 @@ const user=await Users.create(
 
 } )
 
+//get data from->req.body
+//check if data is stored in username or email
+//check if username or email already exists
+//check for password
+//access and refresh token generate
+//send cookie
+
+
+const loginUser=asynchandler(async(req,res)=>{
+
+})
 
 
 
@@ -88,5 +108,4 @@ const user=await Users.create(
 
 
 
-
-export {registerUser,}
+export {registerUser,loginUser}

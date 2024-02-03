@@ -10,12 +10,13 @@ cloudinary.config({
     try{
     if(!localfilePath) return null
     const response=await cloudinary.uploader.upload(localfilePath,{
-        resource_type:"video"
+        resource_type:"auto"
     })
     console.log("uploaded on cloudinary",response.url);
+    fs.unlinkSync(localfilePath);
 return response;
 }
-catch{
+catch(error){
     fs.unlinkSync(localfilePath)
     return null
 }

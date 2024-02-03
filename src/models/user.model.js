@@ -74,7 +74,7 @@ process.env.ACCESS_TOKEN_SECRET,{
     expiresIn:process.env.ACCESS_TOKEN_EXPIRY
 })
 }
-userSchema.methods,getRefreshToken(function(){
+userSchema.methods.generateRefreshToken=function(){
     sign({
         _id:this._id
     },
@@ -82,6 +82,6 @@ userSchema.methods,getRefreshToken(function(){
         expiresIn:process.env.REFRESH_TOKEN_EXPIRY
     }
     )
-})
+}
 
 export const Users=mongoose.model('Users',userSchema);
