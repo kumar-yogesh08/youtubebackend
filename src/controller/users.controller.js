@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import { Subscription } from "../models/subcription.model.js";
 import { Users } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -208,7 +210,7 @@ return res.status(200).json(
 })
 
 const getCurrentUser=asynchandler(async(req,res)=>{
-return res.status(200).json(200,req.User,"Current user fetched succefully")
+return res.status(200).json(new ApiResponse(200,req.User,"Current user fetched succefully"))
 })
 
 
@@ -267,6 +269,113 @@ const updateUserCoverImage=asynchandler(async(req,res)=>{
     })
 
 
+    const getUserChannelProfile=asynchandler(async(req,res)=>{
+    const {username}=req.params
+    if(!username?.trim()){
+        throw new ApiError(400,"Username is missing")
+    }
+    const channel=await Users.aggregate([
+        {
+        $match:{
+            username:username?.toLowerCase()
+        }
+    },
+        {
+        $lookup:{
+            from:"subscriptions",
+            localField:"_id",
+            foreignField:"channel",//note channel._id is not written as channel is itseld objectId of User as channel{type:schema.type.ObjectId,ref:"user"}
+            as:"subscribers"
+        }
+        },
+        {
+         $lookup:{
+            from:"subscriptions",
+            localField:"_id",
+            foreignField:"subscriber",//same for subcriber as channel ,so localFiled id is comapred to foreignField id which is also User id if we put in [] in subscriber schemaand then we would have to match the id from any value in array 
+            as:"subscribedTo"
+         }
+        },
+         {
+         $addFields:{
+            subscribersCount:{
+                $size:"$subscribers"
+            },
+            channelSubscribedToCount:{
+            $size:"$subscribedTo"
+            },
+            isSubscribed:{
+                $cond:{
+                    if:{$in:[req.User?._id,"$subscribers.subscriber"]},
+                    //new moongose.Schema.types.objectId(req.User?._id)
+                    //$subscribedTo,channel is not used may be because of some front end
+                    then:true,
+                    else:false
+                }
+            }
+        },
+         
+         },
+         {
+            $project:{
+                fullname:1,
+                username:1,
+                subscribersCount:1,
+                channelSubscribedToCount:1,
+                isSubscribed:1,
+                avatar:1,
+                coverImage:1,
+                email:1
+            }
+         }        
+    ])
+    if(!channel?.length){
+        throw new ApiError(400,"channel doesn't exist")
+    }
+    res.status(200).json(new ApiResponse(200,channel[0],"User cahnnel fetched succefully"))
+})
+const getWatchHistory=asynchandler(async(req,res)=>{
+    const User=await Users.aggregate([
+        {
+        $match:{
+         _id:new mongoose.Schema.Types.ObjectId(req.User._id)
+        }
+    },
+    {
+        $lookup:{
+            from:"videos",
+            localField:"watchHistory",
+            foreignField:"_id",
+            as:"watchHistory",
+            pipeline:[
+                {
+                    $lookup:{
+                        from:"users",
+                        localField:"owner",
+                        foreignField:"_id",
+                        as:"owner",
+                        pipeline:[{
+                            $project:{
+                                fullname:1,
+                                username:1,
+                                avatar:1
+                            }
+                        }]
+                    }
+                },
+                {
+                    $addFields:{
+                        $first:"$owner"
+                    }
+                }
+            ]
+        }
+
+    }
+    ])
+res.status(200).json(new ApiResponse(200,User[0].watchHistory,"Watch history fetched succefully"))
+})
 
 
-export {registerUser,loginUser,logoutUser,refreshAccessToken,updateUserDetials,getCurrentUser,changeCurrentPassword,updateUserAvatar,updateUserCoverImage}
+export {registerUser,loginUser,logoutUser,refreshAccessToken,updateUserDetials,getCurrentUser,
+    getUserChannelProfile,changeCurrentPassword,updateUserAvatar,updateUserCoverImage,getWatchHistory}
