@@ -152,7 +152,7 @@ if(!validPassword){
 
 const logoutUser=asynchandler(async(req,res)=>{
 
-await Users.findByIdAndUpdate(req.User._id,{$set:{refreshToken:undefined}},{new:true})
+await Users.findByIdAndUpdate(req.User._id,{$unset:{refreshToken:1}},{new:true})
 const options={
     httpOnly:true,
     secure:true
